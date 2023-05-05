@@ -7,11 +7,14 @@ using Util;
 
 public class PlayerAnimationController : MonoBehaviour
 {
+    public event Action SetMovementSpeed;
+    
     private PlayerInput _input;
     private Animator _bodyAnimator;
-    
-    // 움직이는 애니메이션을 실행시킬지 결정하는 불리언 값
+
+    [field: Header("Player MovementState")]
     public bool IsMoving { get; private set; }
+    public bool IsRun { get; private set; }
 
     private void Awake()
     {
@@ -23,6 +26,8 @@ public class PlayerAnimationController : MonoBehaviour
     {
         _input.GetCurrentMovementState -= SetMovementAnimation;
         _input.GetCurrentMovementState += SetMovementAnimation;
+        _input.GetCurrentRunState -= SetRunAnimation;
+        _input.GetCurrentRunState += SetRunAnimation;
     }
 
     private void SetMovementAnimation()
@@ -31,6 +36,8 @@ public class PlayerAnimationController : MonoBehaviour
         _bodyAnimator.SetBool(PlayerAnimationHashLiteral.IsMoveState, IsMoving);
         _bodyAnimator.SetFloat(PlayerAnimationHashLiteral.Horizontal, _input.PrimitiveInputVec.x);
         _bodyAnimator.SetFloat(PlayerAnimationHashLiteral.Vertical, _input.PrimitiveInputVec.z);
+        
+        SetMovementSpeed?.Invoke();
 
         if (_input.PrimitiveInputVec.x != 0 && _input.PrimitiveInputVec.z == 0)
         {
@@ -42,8 +49,16 @@ public class PlayerAnimationController : MonoBehaviour
         }
     }
 
+    private void SetRunAnimation()
+    {
+        IsRun = !IsRun;
+        _bodyAnimator.SetBool(PlayerAnimationHashLiteral.IsRun, IsRun);
+        SetMovementSpeed?.Invoke();
+    }
+
     private void OnDestroy()
     {
         _input.GetCurrentMovementState -= SetMovementAnimation;
-    }
+        _input.GetCurrentRunState -= SetRunAnimation;
+    }        
 }
