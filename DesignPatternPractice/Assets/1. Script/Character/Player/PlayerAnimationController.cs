@@ -14,7 +14,6 @@ public class PlayerAnimationController : MonoBehaviour
 
     [field: Header("Player MovementState")]
     public bool IsMoving { get; private set; }
-    public bool IsRun { get; private set; }
 
     private void Awake()
     {
@@ -28,8 +27,15 @@ public class PlayerAnimationController : MonoBehaviour
         _input.GetCurrentMovementState += SetMovementAnimation;
         _input.GetCurrentRunState -= SetRunAnimation;
         _input.GetCurrentRunState += SetRunAnimation;
+        _input.GetRunDiveRollTrigger -= SetRunDiveRollAnimation;
+        _input.GetRunDiveRollTrigger += SetRunDiveRollAnimation;
     }
 
+    /// <summary>
+    /// Movement애니메이션을 실행시키는 함수
+    /// Movement에는 WalkState와 RunState가 존재한다
+    /// 특별한 액션이 추가되지 않는다면 Default는 WalkState
+    /// </summary>
     private void SetMovementAnimation()
     {
         IsMoving = (_input.PrimitiveInputVec != Vector3.zero) ? true : false;
@@ -38,27 +44,32 @@ public class PlayerAnimationController : MonoBehaviour
         _bodyAnimator.SetFloat(PlayerAnimationHashLiteral.Vertical, _input.PrimitiveInputVec.z);
         
         SetMovementSpeed?.Invoke();
-
-        if (_input.PrimitiveInputVec.x != 0 && _input.PrimitiveInputVec.z == 0)
-        {
-            _bodyAnimator.gameObject.transform.rotation = Quaternion.Euler(0f, 60f, 0f);
-        }
-        else
-        {
-            _bodyAnimator.gameObject.transform.rotation = Quaternion.Euler(0f, 45f, 0f);
-        }
     }
 
+    /// <summary>
+    /// WalkState 중 실행되면 RunState로 진입하게 해주는 함수
+    /// </summary>
     private void SetRunAnimation()
     {
-        IsRun = !IsRun;
-        _bodyAnimator.SetBool(PlayerAnimationHashLiteral.IsRun, IsRun);
+        _bodyAnimator.SetBool(PlayerAnimationHashLiteral.IsRun, _input.IsRun);
+        
         SetMovementSpeed?.Invoke();
+    }
+
+    /// <summary>
+    /// RunState중 Roll을 실행시키는 함수
+    /// Roll 애니메이션이 종료된 후 다시 RunState로 진입
+    /// </summary>
+    private void SetRunDiveRollAnimation()
+    {
+        _bodyAnimator.SetTrigger(PlayerAnimationHashLiteral.IsRunDiveRoll);
     }
 
     private void OnDestroy()
     {
         _input.GetCurrentMovementState -= SetMovementAnimation;
         _input.GetCurrentRunState -= SetRunAnimation;
-    }        
+        _input.GetRunDiveRollTrigger -= SetRunDiveRollAnimation;
+    }                
+
 }
